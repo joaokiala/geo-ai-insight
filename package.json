@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "server": "node server/index.js",
     "server:dev": "nodemon server/index.js",
-    "start": "concurrently \"npm run server:dev\" \"npm run dev\""
+    "ai:dev": "cd ai-service && python app.py",
+    "start": "concurrently \"npm run server:dev\" \"npm run dev\" \"npm run ai:dev\""
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

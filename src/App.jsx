@@ -187,40 +187,50 @@ function Dashboard() {
         }
     };
 
-    const handleAutoPickHorizons = () => {
+    const handleAutoPickHorizons = async () => {
         if (!seismicData) return;
 
-        const aiHorizons = autoPickHorizons(seismicData, 3);
-        const newHorizons = aiHorizons.map((h, idx) => ({
-            id: Date.now() + idx,
-            name: h.name,
-            points: h.points,
-            color: h.color,
-            confidence: h.confidence,
-            method: h.method
-        }));
-        setHorizons([...horizons, ...newHorizons]);
-        
-        // Show success notification
-        console.log(`✅ Auto-picked ${newHorizons.length} horizons with avg confidence: ${(newHorizons.reduce((sum, h) => sum + h.confidence, 0) / newHorizons.length * 100).toFixed(1)}%`);
+        try {
+            const aiHorizons = await autoPickHorizons(seismicData, 3);
+            const newHorizons = aiHorizons.map((h, idx) => ({
+                id: Date.now() + idx,
+                name: h.name,
+                points: h.points,
+                color: h.color,
+                confidence: h.confidence,
+                method: h.method
+            }));
+            setHorizons([...horizons, ...newHorizons]);
+            
+            // Show success notification
+            console.log(`✅ Auto-picked ${newHorizons.length} horizons with avg confidence: ${(newHorizons.reduce((sum, h) => sum + (h.confidence || 0), 0) / newHorizons.length * 100).toFixed(1)}%`);
+        } catch (error) {
+            console.error('Failed to auto-pick horizons:', error);
+            alert('Failed to auto-pick horizons: ' + error.message);
+        }
     };
 
-    const handleDetectFaultsAI = () => {
+    const handleDetectFaultsAI = async () => {
         if (!seismicData) return;
 
-        const aiFaults = detectFaults(seismicData);
-        const newFaults = aiFaults.map((f, idx) => ({
-            id: Date.now() + idx,
-            name: f.name,
-            points: f.points,
-            confidence: f.confidence,
-            displacement: f.displacement,
-            method: f.method
-        }));
-        setFaults([...faults, ...newFaults]);
-        
-        // Show success notification
-        console.log(`✅ Detected ${newFaults.length} faults with avg confidence: ${(newFaults.reduce((sum, f) => sum + f.confidence, 0) / newFaults.length * 100).toFixed(1)}%`);
+        try {
+            const aiFaults = await detectFaults(seismicData);
+            const newFaults = aiFaults.map((f, idx) => ({
+                id: Date.now() + idx,
+                name: f.name,
+                points: f.points,
+                confidence: f.confidence,
+                displacement: f.displacement,
+                method: f.method
+            }));
+            setFaults([...faults, ...newFaults]);
+            
+            // Show success notification
+            console.log(`✅ Detected ${newFaults.length} faults with avg confidence: ${(newFaults.reduce((sum, f) => sum + (f.confidence || 0), 0) / newFaults.length * 100).toFixed(1)}%`);
+        } catch (error) {
+            console.error('Failed to detect faults:', error);
+            alert('Failed to detect faults: ' + error.message);
+        }
     };
 
     const handleExtractAmplitude = () => {
@@ -728,21 +738,21 @@ Saved: ${new Date(projectData.savedAt).toLocaleString()}`);
                         </h3>
                         <div className="space-y-1">
                             <button
-                                onClick={() => handleAutoPickHorizons()}
+                                onClick={handleAutoPickHorizons}
                                 disabled={!seismicData}
                                 className="w-full px-3 py-2 rounded text-left flex items-center gap-2 transition text-xs bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 disabled:bg-slate-800 disabled:opacity-40 disabled:text-gray-500"
                             >
                                 <span>Auto-Pick Horizons</span>
                             </button>
                             <button
-                                onClick={() => handleDetectFaultsAI()}
+                                onClick={handleDetectFaultsAI}
                                 disabled={!seismicData}
                                 className="w-full px-3 py-2 rounded text-left flex items-center gap-2 transition text-xs bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 disabled:bg-slate-800 disabled:opacity-40 disabled:text-gray-500"
                             >
                                 <span>Detect Faults</span>
                             </button>
                             <button
-                                onClick={() => handleExtractAmplitude()}
+                                onClick={handleExtractAmplitude}
                                 disabled={!seismicData}
                                 className="w-full px-3 py-2 rounded text-left flex items-center gap-2 transition text-xs bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 disabled:bg-slate-800 disabled:opacity-40 disabled:text-gray-500"
                             >

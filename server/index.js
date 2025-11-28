@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import authRoutes from './routes/auth.js';
+import aiRoutes from './routes/ai.js'; // Add AI routes
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +19,9 @@ if (!process.env.JWT_SECRET) {
     console.log('💡 Please set JWT_SECRET in your .env file');
     process.exit(1);
 }
+
+// AI Service URL
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 
 const app = express();
 
@@ -294,6 +298,9 @@ function setupInMemoryRoutes() {
 // Connect to database
 connectDB();
 
+// Use AI routes
+app.use('/api/ai', aiRoutes);
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.status(200).json({
@@ -301,6 +308,7 @@ app.get('/api/health', (req, res) => {
         message: useInMemory ? 'Server running with in-memory storage' : 'Server running with MongoDB',
         storage: useInMemory ? 'In-Memory (Temporary)' : 'MongoDB (Persistent)',
         database: useInMemory ? 'N/A' : (mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'),
+        aiService: AI_SERVICE_URL,
         timestamp: new Date().toISOString()
     });
 });

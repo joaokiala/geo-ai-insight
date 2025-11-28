@@ -15,6 +15,7 @@ services:
       - ./public:/app/public
     depends_on:
       - backend
+      - ai-service
     networks:
       - geo-ai-network
 
@@ -33,9 +34,28 @@ services:
       - JWT_EXPIRE=24h
       # MongoDB connection - using in-memory for development
       - MONGODB_URI=
+      # AI Service URL
+      - AI_SERVICE_URL=http://ai-service:5001
     volumes:
       - ./server:/app
       - /app/node_modules
+    networks:
+      - geo-ai-network
+    depends_on:
+      - ai-service
+
+  # AI Service
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./ai-service:/app
+      - /app/venv
     networks:
       - geo-ai-network
 

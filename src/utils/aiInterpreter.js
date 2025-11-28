@@ -1,5 +1,66 @@
 // AI-powered interpretation algorithms
-export const autoPickHorizons = (seismicData, numHorizons = 3) => {
+import axios from 'axios';
+
+// Configure axios defaults
+axios.defaults.withCredentials = true;
+
+/**
+ * Call backend AI service for horizon picking
+ * @param {Object} seismicData - The seismic data to analyze
+ * @param {number} numHorizons - Number of horizons to pick
+ * @returns {Promise<Array>} The AI-generated horizons
+ */
+export const autoPickHorizons = async (seismicData, numHorizons = 3) => {
+    try {
+        console.log('🤖 Calling backend AI service for horizon picking');
+        
+        const response = await axios.post('/api/ai/horizon-pick', {
+            seismicData: seismicData.data || seismicData
+        });
+        
+        if (response.data.success) {
+            console.log('✅ AI horizon picking completed');
+            return response.data.horizons || [];
+        } else {
+            throw new Error(response.data.message || 'AI service failed');
+        }
+    } catch (error) {
+        console.error('❌ AI horizon picking failed:', error.message);
+        // Fallback to original JavaScript implementation
+        return fallbackAutoPickHorizons(seismicData, numHorizons);
+    }
+};
+
+/**
+ * Call backend AI service for fault detection
+ * @param {Object} seismicData - The seismic data to analyze
+ * @returns {Promise<Array>} The AI-detected faults
+ */
+export const detectFaults = async (seismicData) => {
+    try {
+        console.log('🤖 Calling backend AI service for fault detection');
+        
+        const response = await axios.post('/api/ai/fault-detection', {
+            seismicData: seismicData.data || seismicData
+        });
+        
+        if (response.data.success) {
+            console.log('✅ AI fault detection completed');
+            return response.data.faults || [];
+        } else {
+            throw new Error(response.data.message || 'AI service failed');
+        }
+    } catch (error) {
+        console.error('❌ AI fault detection failed:', error.message);
+        // Fallback to original JavaScript implementation
+        return fallbackDetectFaults(seismicData);
+    }
+};
+
+/**
+ * Original JavaScript implementation as fallback for horizon picking
+ */
+const fallbackAutoPickHorizons = (seismicData, numHorizons = 3) => {
     const horizons = [];
     const { width, height, data } = seismicData;
 
@@ -55,7 +116,10 @@ export const autoPickHorizons = (seismicData, numHorizons = 3) => {
     return horizons;
 };
 
-export const detectFaults = (seismicData) => {
+/**
+ * Original JavaScript implementation as fallback for fault detection
+ */
+const fallbackDetectFaults = (seismicData) => {
     const faults = [];
     const { width, height, data } = seismicData;
     const gradientThreshold = 40;

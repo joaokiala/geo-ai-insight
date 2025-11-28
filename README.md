@@ -14,8 +14,8 @@ Advanced Seismic Interpretation Platform with AI-powered tools and secure authen
 
 ### Seismic Analysis
 - **2D Seismic Viewer** - Interactive seismic section visualization
-- **AI Horizon Picking** - Automated horizon detection and tracking
-- **Fault Detection** - Intelligent fault identification
+- **AI Horizon Picking** - Automated horizon detection and tracking (Python-powered)
+- **Fault Detection** - Intelligent fault identification (Python-powered)
 - **Attribute Analysis** - Coherence, curvature, amplitude extraction
 - **Map Generation** - Structure and isochron maps
 - **SEG-Y Support** - Import industry-standard seismic data
@@ -23,6 +23,7 @@ Advanced Seismic Interpretation Platform with AI-powered tools and secure authen
 ## 📋 Prerequisites
 
 - Node.js (v18 or higher)
+- Python 3.9+ (for AI service)
 - npm or yarn
 - **MongoDB (Optional)** - System works without MongoDB using in-memory storage
   - For persistent storage, use MongoDB Atlas (free) or local MongoDB
@@ -49,7 +50,14 @@ cd server
 npm install
 ```
 
-### 4. Configure Environment Variables (Optional)
+### 4. Install Python AI Service Dependencies
+
+```bash
+cd ../ai-service
+pip install -r requirements.txt
+```
+
+### 5. Configure Environment Variables (Optional)
 
 The system works immediately with in-memory storage. For persistent storage:
 
@@ -72,46 +80,57 @@ PORT=5000
 JWT_SECRET=your-secure-secret-key-min-32-characters
 JWT_EXPIRE=24h
 CLIENT_URL=http://localhost:5173
+AI_SERVICE_URL=http://localhost:5001
 ```
 
 **IMPORTANT**: Change `JWT_SECRET` to a strong random string in production!
 
-### 5. Start the Application (MongoDB Optional)
+### 6. Start the Application (MongoDB Optional)
 
 **The system works immediately without MongoDB!** It uses intelligent fallback to in-memory storage.
 
-#### Option A: Start Backend and Frontend Separately
+#### Option A: Start All Services Separately
 
-Terminal 1 (Backend):
+Terminal 1 (AI Service):
+```bash
+cd ai-service
+python app.py
+```
+
+Terminal 2 (Backend):
 ```bash
 cd server
 npm run dev
 ```
 
-Terminal 2 (Frontend):
+Terminal 3 (Frontend):
 ```bash
 npm run dev
 ```
 
-#### Option B: Start Both Concurrently (Once dependencies are installed)
+#### Option B: Start Everything with Docker (Recommended)
+
+```bash
+docker-compose up
+```
+
+This will start all services:
+- Frontend (port 5173)
+- Backend (port 5000) 
+- AI Service (port 5001)
+
+#### Option C: Start Both Concurrently (Once dependencies are installed)
 
 From the root directory:
 ```bash
 npm start
 ```
 
-#### Option C: Using Docker (Recommended for consistent environment)
-
-```bash
-docker-compose up
-```
-
-This will start both frontend (port 5173) and backend (port 5000) services with proper networking.
-
 ### 7. Access the Application
 
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
+- AI Service: http://localhost:5001
 - API Health Check: http://localhost:5000/api/health
 
 **Storage Status:** Check `/api/health` to see if using MongoDB or in-memory storage.
@@ -150,6 +169,12 @@ This will start both frontend (port 5173) and backend (port 5000) services with 
 - `GET /api/auth/me` - Get current user (protected)
 - `POST /api/auth/logout` - Logout user (protected)
 
+### AI Services
+- `POST /api/ai/horizon-pick` - AI-powered horizon picking
+- `POST /api/ai/fault-detection` - AI-powered fault detection
+- `POST /api/ai/attribute-analysis` - Seismic attribute analysis
+- `GET /api/ai/health` - Check AI service health
+
 ### Request Examples
 
 **Register:**
@@ -176,18 +201,35 @@ curl -X POST http://localhost:5000/api/auth/login \
   }'
 ```
 
+**AI Horizon Picking:**
+```bash
+curl -X POST http://localhost:5000/api/ai/horizon-pick \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=your-token-here" \
+  -d '{
+    "seismicData": [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+  }'
+```
+
 ## 🏗️ Project Structure
 
 ```
 geo-ai-insights/
-├── server/                  # Backend API
+├── ai-service/             # Python AI service
+│   ├── app.py              # Flask application
+│   ├── requirements.txt    # Python dependencies
+│   └── Dockerfile          # AI service Dockerfile
+├── server/                 # Backend API
 │   ├── models/             # MongoDB models
 │   │   └── User.js         # User model with bcrypt
 │   ├── routes/             # API routes
-│   │   └── auth.js         # Authentication endpoints
+│   │   ├── auth.js         # Authentication endpoints
+│   │   └── ai.js           # AI service endpoints
 │   ├── middleware/         # Express middleware
 │   │   ├── auth.js         # JWT verification
 │   │   └── validate.js     # Input validation
+│   ├── utils/              # Utility functions
+│   │   └── aiService.js    # AI service client
 │   ├── .env                # Environment variables
 │   ├── index.js            # Server entry point
 │   └── package.json        # Backend dependencies
@@ -205,12 +247,14 @@ geo-ai-insights/
 │   │   ├── seismicGenerator.js
 │   │   ├── attributeCalculator.js
 │   │   ├── aiInterpreter.js
+│   │   ├── realSeismicLoader.js
 │   │   └── segyParser.js
 │   ├── styles/
 │   │   └── main.css        # Global styles
 │   ├── App.jsx             # Main app component
 │   └── main.jsx            # Entry point
 ├── index.html
+├── docker-compose.yml      # Docker orchestration
 ├── vite.config.js          # Vite configuration
 ├── tailwind.config.js      # Tailwind CSS config
 └── package.json            # Frontend dependencies
@@ -259,6 +303,7 @@ npm run build
 
 - **Backend**: Deploy to Heroku, AWS, DigitalOcean, or Railway
 - **Frontend**: Deploy to Vercel, Netlify, or AWS S3
+- **AI Service**: Deploy to AWS, Google Cloud, or Azure ML
 - **Database**: MongoDB Atlas (fully managed)
 
 ### Additional Security for Production
@@ -279,9 +324,9 @@ MIT
 For issues or questions:
 1. Check the MongoDB connection
 2. Verify environment variables are set correctly
-3. Ensure both frontend and backend are running
+3. Ensure all services are running
 4. Check browser console for errors
 
 ---
 
-**Built with**: React, Node.js, Express, MongoDB, JWT, Tailwind CSS, Three.js
+**Built with**: React, Node.js, Express, MongoDB, JWT, Tailwind CSS, Three.js, Python, Flask, TensorFlow
