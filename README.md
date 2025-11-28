@@ -33,7 +33,7 @@ Advanced Seismic Interpretation Platform with AI-powered tools and secure authen
 ### 1. Clone or Navigate to Project
 
 ```bash
-cd c:/Users/DELL/Documents/Claud-project/geo-ai-insights
+cd c:/Users/DELL/Documents/true_qoder/geo-ai-insights
 ```
 
 ### 2. Install Frontend Dependencies
