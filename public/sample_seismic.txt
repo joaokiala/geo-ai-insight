@@ -1,0 +1,16 @@
+# Sample Seismic Data - Simple Text Format
+# This file contains synthetic seismic data for testing
+# Format: Each line represents one sample in the seismic trace
+# Data simulates 3 horizons and 2 faults
+
+# Metadata
+WIDTH=800
+HEIGHT=600
+SAMPLE_RATE=4
+INLINE_START=1000
+CROSSLINE_START=2000
+
+# Instructions:
+# Use the "Import SEG-Y" button in the app to load data
+# The synthetic generator creates realistic seismic data automatically
+# This file is for reference only - the app generates data internally

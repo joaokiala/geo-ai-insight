@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seismic Viewer - Color Bar Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .viewer-container {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .seismic-display {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .seismic-canvas-wrapper {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid #475569;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+        }
+
+        .colorbar-wrapper {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 20px 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-panel {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.85em;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 1.1em;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🌊 Seismic Viewer with Color Bar</h1>
+        <p class="subtitle">Professional Acoustic Impedance Visualization</p>
+
+        <div class="viewer-container">
+            <div class="seismic-display">
+                <!-- Seismic Data Canvas -->
+                <div class="seismic-canvas-wrapper">
+                    <canvas id="seismicCanvas"></canvas>
+                </div>
+
+                <!-- Color Bar -->
+                <div class="colorbar-wrapper">
+                    <canvas id="colorbarCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Resolution</span>
+                        <span class="info-value" id="resolution">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Amplitude Range</span>
+                        <span class="info-value" id="ampRange">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Color Scheme</span>
+                        <span class="info-value">Blue-White-Red</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span class="info-value">✅ Color Bar Active</span>
+                    </div>
+                </div>
+                <span class="feature-badge">✓ Color Bar Feature Complete</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate synthetic seismic data
+        function generateSeismicData() {
+            const width = 500;
+            const height = 400;
+            const data = [];
+
+            for (let y = 0; y < height; y++) {
+                data[y] = [];
+                for (let x = 0; x < width; x++) {
+                    // Create realistic seismic pattern with waves and variations
+                    const wave1 = Math.sin((x / 30) + (y / 40)) * 50;
+                    const wave2 = Math.cos((x / 20) - (y / 30)) * 30;
+                    const noise = (Math.random() - 0.5) * 20;
+                    const trend = (y / height) * 40 - 20;
+
+                    data[y][x] = wave1 + wave2 + noise + trend;
+                }
+            }
+
+            return { width, height, data };
+        }
+
+        // Draw seismic data
+        function drawSeismicData(canvas, seismicData) {
+            const ctx = canvas.getContext('2d');
+            const { width, height, data } = seismicData;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Find min and max
+            let min = Infinity;
+            let max = -Infinity;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const amp = data[y][x];
+                    if (amp < min) min = amp;
+                    if (amp > max) max = amp;
+                }
+            }
+
+            // Draw seismic data
+            const imageData = ctx.createImageData(width, height);
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const amp = data[y][x];
+                    const normalized = ((amp - min) / (max - min)) * 255;
+                    const idx = (y * width + x) * 4;
+
+                    // Blue-white-red colormap
+                    if (amp > 0) {
+                        imageData.data[idx] = 255;
+                        imageData.data[idx + 1] = 255 - normalized;
+                        imageData.data[idx + 2] = 255 - normalized;
+                    } else {
+                        imageData.data[idx] = 255 - Math.abs(normalized);
+                        imageData.data[idx + 1] = 255 - Math.abs(normalized);
+                        imageData.data[idx + 2] = 255;
+                    }
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            return { min, max };
+        }
+
+        // Draw colorbar (matching the React component implementation)
+        function drawColorbar(canvas, min, max) {
+            const ctx = canvas.getContext('2d');
+            canvas.width = 90;
+            canvas.height = 520;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, 90, 520);
+
+            // Draw title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Amplitude', 45, 18);
+            ctx.font = '10px Arial';
+            ctx.fillStyle = '#9ca3af';
+            ctx.fillText('(Acoustic Impedance)', 45, 32);
+
+            // Draw gradient bar
+            const barTop = 45;
+            const barHeight = 430;
+            for (let y = 0; y < barHeight; y++) {
+                const value = max - (y / barHeight) * (max - min);
+                const normalized = (value - min) / (max - min);
+
+                // Professional colormap (blue-white-red)
+                let r, g, b;
+                if (value > 0) {
+                    r = 255;
+                    g = Math.floor((1 - normalized) * 255);
+                    b = Math.floor((1 - normalized) * 255);
+                } else {
+                    r = Math.floor(normalized * 255);
+                    g = Math.floor(normalized * 255);
+                    b = 255;
+                }
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(20, barTop + y, 40, 1);
+            }
+
+            // Draw border around colorbar
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, barTop, 40, barHeight);
+
+            // Draw tick marks and labels
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'left';
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#64748b';
+
+            const ticks = 10;
+            for (let i = 0; i <= ticks; i++) {
+                const y = barTop + (i / ticks) * barHeight;
+                const value = max - (i / ticks) * (max - min);
+
+                // Tick mark
+                ctx.beginPath();
+                ctx.moveTo(60, y);
+                ctx.lineTo(66, y);
+                ctx.stroke();
+
+                // Label (only even ticks)
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(value.toFixed(0), 68, y + 4);
+                }
+            }
+
+            // Draw high/low indicators
+            ctx.font = 'bold 9px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillText('HIGH', 40, barTop - 5);
+
+            ctx.fillStyle = '#4dabf7';
+            ctx.fillText('LOW', 40, barTop + barHeight + 14);
+        }
+
+        // Initialize
+        const seismicData = generateSeismicData();
+        const seismicCanvas = document.getElementById('seismicCanvas');
+        const colorbarCanvas = document.getElementById('colorbarCanvas');
+
+        const { min, max } = drawSeismicData(seismicCanvas, seismicData);
+        drawColorbar(colorbarCanvas, min, max);
+
+        // Update info
+        document.getElementById('resolution').textContent = `${seismicData.width} × ${seismicData.height}`;
+        document.getElementById('ampRange').textContent = `${min.toFixed(2)} to ${max.toFixed(2)}`;
+    </script>
+</body>
+
+</html>
