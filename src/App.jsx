@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -16,13 +16,14 @@ import FileUploader from './components/FileUploader';
 import Integration from './components/Integration';
 import AdvancedTracking from './components/AdvancedTracking';
 import Sidebar from './components/Sidebar';
-import { Layers, Upload, Save, MousePointer, Ruler, Wand2, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Layers, Upload, Save, MousePointer, Ruler, Wand2, Activity, Zap, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { generateSyntheticSeismic, generate3DSeismicVolume, extractSlice } from './utils/seismicGenerator';
 import { loadRealSeismicData } from './utils/realSeismicLoader';
 import { autoPickHorizons, detectFaults } from './utils/aiInterpreter';
 
 function Dashboard() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('seismic-section');
     const [activeTool, setActiveTool] = useState(null);
     const [seismicData, setSeismicData] = useState(null);
@@ -637,6 +638,28 @@ Saved: ${new Date(projectData.savedAt).toLocaleString()}`);
                         <Save className="w-4 h-4" />
                         Save Project
                     </button>
+                    
+                    {/* Logout Button - More visible option */}
+                    <button
+                        onClick={async () => {
+                            if (window.confirm('Are you sure you want to logout?')) {
+                                try {
+                                    await logout();
+                                    navigate('/login');
+                                } catch (error) {
+                                    console.error('Logout error:', error);
+                                    // Still navigate to login page even if logout fails on the server
+                                    navigate('/login');
+                                }
+                            }
+                        }}
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-1 transition text-sm"
+                        title="Logout"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="hidden md:inline">Logout</span>
+                    </button>
+                    
                     <UserProfile />
                 </div>
             </header>

@@ -1,16 +1,29 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
+    const [logoutError, setLogoutError] = useState('');
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
+    const handleLogout = async () => {
+        try {
+            setLogoutError('');
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+            setLogoutError('Failed to logout. Please try again.');
+            // Still navigate to login page even if logout fails on the server
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
+        } finally {
+            setIsOpen(false);
+        }
     };
 
     if (!user) return null;
@@ -51,6 +64,13 @@ const UserProfile = () => {
                                 </span>
                             </div>
                         </div>
+
+                        {logoutError && (
+                            <div className="px-4 py-2 bg-red-500/20 border-b border-red-500/30 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                                <span className="text-xs text-red-200">{logoutError}</span>
+                            </div>
+                        )}
 
                         <button
                             onClick={handleLogout}
