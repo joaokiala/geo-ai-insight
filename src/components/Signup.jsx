@@ -83,13 +83,18 @@ const Signup = () => {
 
         setLoading(true);
         const { confirmPassword, ...registerData } = formData;
-        const result = await register(registerData);
-        setLoading(false);
+        try {
+            const result = await register(registerData);
+            setLoading(false);
 
-        if (result.success) {
-            navigate('/');
-        } else {
-            setErrors({ general: result.error });
+            if (result.success) {
+                navigate('/');
+            } else {
+                setErrors({ general: result.error || 'Registration failed. Please try again.' });
+            }
+        } catch (error) {
+            setLoading(false);
+            setErrors({ general: 'An unexpected error occurred. Please try again.' });
         }
     };
 

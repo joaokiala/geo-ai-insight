@@ -27,18 +27,16 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (token) {
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                const response = await axios.get('/api/auth/me');
-                if (response.data.success) {
-                    setUser(response.data.user);
-                }
+            // Remove localStorage token handling since we're using HttpOnly cookies
+            const response = await axios.get('/api/auth/me', {
+                withCredentials: true
+            });
+            if (response.data.success) {
+                setUser(response.data.user);
             }
         } catch (error) {
             console.error('Auth check failed:', error);
-            localStorage.removeItem('token');
-            delete axios.defaults.headers.common['Authorization'];
+            setUser(null);
         } finally {
             setLoading(false);
         }
@@ -47,13 +45,12 @@ export const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         try {
             setError(null);
-            const response = await axios.post('/api/auth/register', userData);
+            const response = await axios.post('/api/auth/register', userData, {
+                withCredentials: true
+            });
 
             if (response.data.success) {
-                const { token, user } = response.data;
-                localStorage.setItem('token', token);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                setUser(user);
+                setUser(response.data.user);
                 return { success: true };
             }
         } catch (error) {
@@ -68,13 +65,12 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         try {
             setError(null);
-            const response = await axios.post('/api/auth/login', credentials);
+            const response = await axios.post('/api/auth/login', credentials, {
+                withCredentials: true
+            });
 
             if (response.data.success) {
-                const { token, user } = response.data;
-                localStorage.setItem('token', token);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                setUser(user);
+                setUser(response.data.user);
                 return { success: true };
             }
         } catch (error) {
@@ -86,12 +82,12 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.post('/api/auth/logout');
+            await axios.post('/api/auth/logout', {}, {
+                withCredentials: true
+            });
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            localStorage.removeItem('token');
-            delete axios.defaults.headers.common['Authorization'];
             setUser(null);
         }
     };

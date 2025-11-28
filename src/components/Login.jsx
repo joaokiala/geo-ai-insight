@@ -27,14 +27,18 @@ const Login = () => {
         setError('');
         setLoading(true);
 
-        const result = await login(formData);
+        try {
+            const result = await login(formData);
+            setLoading(false);
 
-        setLoading(false);
-
-        if (result.success) {
-            navigate('/');
-        } else {
-            setError(result.error || 'Login failed. Please try again.');
+            if (result.success) {
+                navigate('/');
+            } else {
+                setError(result.error || 'Login failed. Please try again.');
+            }
+        } catch (error) {
+            setLoading(false);
+            setError('An unexpected error occurred. Please try again.');
         }
     };
 

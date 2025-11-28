@@ -100,6 +100,14 @@ From the root directory:
 npm start
 ```
 
+#### Option C: Using Docker (Recommended for consistent environment)
+
+```bash
+docker-compose up
+```
+
+This will start both frontend (port 5173) and backend (port 5000) services with proper networking.
+
 ### 7. Access the Application
 
 - Frontend: http://localhost:5173
@@ -148,6 +156,7 @@ npm start
 ```bash
 curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
+  -H "Cookie: token=your-token-here" \
   -d '{
     "name": "Test User",
     "email": "test@example.com",
@@ -160,6 +169,7 @@ curl -X POST http://localhost:5000/api/auth/register \
 ```bash
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
+  -H "Cookie: token=your-token-here" \
   -d '{
     "email": "test@example.com",
     "password": "SecurePass123!"
