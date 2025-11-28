@@ -639,27 +639,6 @@ Saved: ${new Date(projectData.savedAt).toLocaleString()}`);
                         Save Project
                     </button>
                     
-                    {/* Logout Button - More visible option */}
-                    <button
-                        onClick={async () => {
-                            if (window.confirm('Are you sure you want to logout?')) {
-                                try {
-                                    await logout();
-                                    navigate('/login');
-                                } catch (error) {
-                                    console.error('Logout error:', error);
-                                    // Still navigate to login page even if logout fails on the server
-                                    navigate('/login');
-                                }
-                            }
-                        }}
-                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-1 transition text-sm"
-                        title="Logout"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="hidden md:inline">Logout</span>
-                    </button>
-                    
                     <UserProfile />
                 </div>
             </header>
