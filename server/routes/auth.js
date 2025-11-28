@@ -58,11 +58,13 @@ const sendTokenResponse = (user, statusCode, res) => {
 // @access  Public
 router.post('/register', validateRegistration, async (req, res) => {
     try {
+        console.log('📥 Registration request received:', req.body);
         const { name, email, password, company } = req.body;
 
         // Check if user already exists
         const userExists = await User.findOne({ email });
         if (userExists) {
+            console.log('⚠️ User already exists with email:', email);
             return res.status(400).json({
                 success: false,
                 message: 'User already exists with this email'
@@ -70,18 +72,28 @@ router.post('/register', validateRegistration, async (req, res) => {
         }
 
         // Create user
+        console.log('🆕 Creating new user with email:', email);
         const user = await User.create({
             name,
             email,
             password,
             company
         });
+        console.log('✅ User created successfully:', user._id);
 
         sendTokenResponse(user, 201, res);
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
+        console.error('📝 Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            code: error.code
+        });
+        
         // Handle specific MongoDB errors
         if (error.code === 11000) {
+            console.log('⚠️ Duplicate key error for email:', error.keyValue);
             return res.status(400).json({
                 success: false,
                 message: 'User already exists with this email'
@@ -90,6 +102,7 @@ router.post('/register', validateRegistration, async (req, res) => {
         
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(err => err.message);
+            console.log('⚠️ Validation errors:', messages);
             return res.status(400).json({
                 success: false,
                 message: 'Validation error',

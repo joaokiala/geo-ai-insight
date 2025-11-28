@@ -44,18 +44,27 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
+            console.log('📤 Sending registration request:', userData);
             setError(null);
             const response = await axios.post('/api/auth/register', userData, {
                 withCredentials: true
             });
+            console.log('📥 Registration response:', response.data);
 
             if (response.data.success) {
                 setUser(response.data.user);
                 return { success: true };
+            } else {
+                const errorMessage = response.data.message || 'Registration failed';
+                console.log('⚠️ Registration failed:', errorMessage);
+                return { success: false, error: errorMessage };
             }
         } catch (error) {
+            console.error('❌ Registration error:', error);
+            console.error('📝 Error response:', error.response?.data);
             const message = error.response?.data?.message ||
                 error.response?.data?.errors?.[0]?.message ||
+                error.message ||
                 'Registration failed';
             setError(message);
             return { success: false, error: message };

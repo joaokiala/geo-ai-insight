@@ -89,10 +89,12 @@ function setupInMemoryRoutes() {
     
     app.post('/api/auth/register', async (req, res) => {
         try {
+            console.log('📥 In-memory registration request received:', req.body);
             const { name, email, password, company } = req.body;
             
             // Validate required fields
             if (!name || !email || !password) {
+                console.log('⚠️ Missing required fields:', { name: !!name, email: !!email, password: !!password });
                 return res.status(400).json({ 
                     success: false, 
                     message: 'Name, email, and password are required' 
@@ -102,6 +104,7 @@ function setupInMemoryRoutes() {
             // Validate email format
             const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
             if (!emailRegex.test(email)) {
+                console.log('⚠️ Invalid email format:', email);
                 return res.status(400).json({ 
                     success: false, 
                     message: 'Please provide a valid email' 
@@ -110,6 +113,7 @@ function setupInMemoryRoutes() {
             
             // Validate password strength
             if (password.length < 8) {
+                console.log('⚠️ Password too short:', password.length);
                 return res.status(400).json({ 
                     success: false, 
                     message: 'Password must be at least 8 characters' 
@@ -117,7 +121,9 @@ function setupInMemoryRoutes() {
             }
             
             // Check if user already exists
-            if (users.find(u => u.email === email)) {
+            const existingUser = users.find(u => u.email === email);
+            if (existingUser) {
+                console.log('⚠️ User already exists with email:', email);
                 return res.status(400).json({ 
                     success: false, 
                     message: 'User already exists with this email' 
@@ -125,6 +131,7 @@ function setupInMemoryRoutes() {
             }
             
             // Hash password
+            console.log('🔒 Hashing password for user:', email);
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             
@@ -139,6 +146,7 @@ function setupInMemoryRoutes() {
             };
             
             users.push(user);
+            console.log('✅ User created successfully:', user.id);
             
             // Generate token
             const token = generateToken(user.id);
@@ -152,6 +160,7 @@ function setupInMemoryRoutes() {
             });
             
             // Send response
+            console.log('📤 Sending registration response for user:', user.id);
             res.status(201).json({ 
                 success: true, 
                 token,
@@ -164,7 +173,12 @@ function setupInMemoryRoutes() {
                 } 
             });
         } catch (error) {
-            console.error('Registration error:', error);
+            console.error('❌ In-memory registration error:', error);
+            console.error('📝 Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
             res.status(500).json({ 
                 success: false, 
                 message: 'Server error during registration: ' + error.message 

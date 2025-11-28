@@ -84,15 +84,20 @@ const Signup = () => {
         setLoading(true);
         const { confirmPassword, ...registerData } = formData;
         try {
+            console.log('📤 Submitting registration form:', registerData);
             const result = await register(registerData);
+            console.log('📥 Registration result:', result);
             setLoading(false);
 
             if (result.success) {
+                console.log('✅ Registration successful, navigating to dashboard');
                 navigate('/');
             } else {
+                console.log('⚠️ Registration failed:', result.error);
                 setErrors({ general: result.error || 'Registration failed. Please try again.' });
             }
         } catch (error) {
+            console.error('❌ Registration exception:', error);
             setLoading(false);
             setErrors({ general: 'An unexpected error occurred. Please try again.' });
         }
@@ -101,7 +106,7 @@ const Signup = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
             {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM1YjIxYjYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCA0LTRoNHYtNGgtNGMtNC40MTggMC04IDMuNTgyLTggOHY0aDR2LTR6TTIgMmg0djRIMnptMCAxMGg0djRIMnptMTAgMGg0djRoLTR6bTAtMTBoNHY0aC00em0xMCAwaDR2NGgtNHptMCAxMGg0djRoLTR6bTEwIDBoNHY0aC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-10"></div>
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM1YjIxYjYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCA0LTRoNHYtNGgtNGMtNC40MTggMC04IDMuNTgyLTggOHY0aDR2LTR6TTIgMmg0djRIMnptMCAxMGg0djRIMnptMTAwaDR2NGgtLTR6bTAtMTBoNHY0aC00em0xMCAwaDR2NGgtNHptMCAxMGg0djRoLTR6bTEwIDBoNHY0aC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-10"></div>
 
             <div className="w-full max-w-md relative z-10">
                 {/* Header */}
