@@ -12,6 +12,13 @@ import authRoutes from './routes/auth.js';
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET is not defined in environment variables');
+    console.log('💡 Please set JWT_SECRET in your .env file');
+    process.exit(1);
+}
+
 const app = express();
 
 // In-memory storage fallback
@@ -76,59 +83,197 @@ function setupInMemoryRoutes() {
     
     const generateToken = (id) => {
         return jwt.sign({ id }, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_EXPIRE
+            expiresIn: process.env.JWT_EXPIRE || '24h'
         });
     };
     
     app.post('/api/auth/register', async (req, res) => {
         try {
             const { name, email, password, company } = req.body;
-            if (users.find(u => u.email === email)) {
-                return res.status(400).json({ success: false, message: 'User already exists' });
+            
+            // Validate required fields
+            if (!name || !email || !password) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Name, email, and password are required' 
+                });
             }
+            
+            // Validate email format
+            const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Please provide a valid email' 
+                });
+            }
+            
+            // Validate password strength
+            if (password.length < 8) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Password must be at least 8 characters' 
+                });
+            }
+            
+            // Check if user already exists
+            if (users.find(u => u.email === email)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'User already exists with this email' 
+                });
+            }
+            
+            // Hash password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
-            const user = { id: Date.now().toString(), name, email, password: hashedPassword, company, role: 'user' };
+            
+            // Create user
+            const user = { 
+                id: Date.now().toString(), 
+                name, 
+                email, 
+                password: hashedPassword, 
+                company: company || '',
+                role: 'user' 
+            };
+            
             users.push(user);
+            
+            // Generate token
             const token = generateToken(user.id);
-            res.cookie('token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-            res.json({ success: true, token, user: { id: user.id, name, email, company, role: user.role } });
+            
+            // Set cookie
+            res.cookie('token', token, { 
+                httpOnly: true, 
+                maxAge: 24 * 60 * 60 * 1000,
+                sameSite: 'strict',
+                secure: process.env.NODE_ENV === 'production'
+            });
+            
+            // Send response
+            res.status(201).json({ 
+                success: true, 
+                token,
+                user: { 
+                    id: user.id, 
+                    name: user.name, 
+                    email: user.email, 
+                    company: user.company,
+                    role: user.role 
+                } 
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Server error' });
+            console.error('Registration error:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Server error during registration: ' + error.message 
+            });
         }
     });
     
     app.post('/api/auth/login', async (req, res) => {
         try {
             const { email, password } = req.body;
+            
+            // Validate required fields
+            if (!email || !password) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Email and password are required' 
+                });
+            }
+            
+            // Find user
             const user = users.find(u => u.email === email);
             if (!user || !(await bcrypt.compare(password, user.password))) {
-                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'Invalid credentials' 
+                });
             }
+            
+            // Generate token
             const token = generateToken(user.id);
-            res.cookie('token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-            res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, company: user.company, role: user.role } });
+            
+            // Set cookie
+            res.cookie('token', token, { 
+                httpOnly: true, 
+                maxAge: 24 * 60 * 60 * 1000,
+                sameSite: 'strict',
+                secure: process.env.NODE_ENV === 'production'
+            });
+            
+            // Send response
+            res.json({ 
+                success: true, 
+                token,
+                user: { 
+                    id: user.id, 
+                    name: user.name, 
+                    email: user.email, 
+                    company: user.company,
+                    role: user.role 
+                } 
+            });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Server error' });
+            console.error('Login error:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Server error during login: ' + error.message 
+            });
         }
     });
     
     app.get('/api/auth/me', (req, res) => {
         try {
             const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-            if (!token) return res.status(401).json({ success: false, message: 'Not authorized' });
+            if (!token) {
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'Not authorized' 
+                });
+            }
+            
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const user = users.find(u => u.id === decoded.id);
-            if (!user) return res.status(401).json({ success: false, message: 'User not found' });
-            res.json({ success: true, user: { id: user.id, name: user.name, email: user.email, company: user.company, role: user.role } });
+            if (!user) {
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'User not found' 
+                });
+            }
+            
+            res.json({ 
+                success: true, 
+                user: { 
+                    id: user.id, 
+                    name: user.name, 
+                    email: user.email, 
+                    company: user.company,
+                    role: user.role 
+                } 
+            });
         } catch (error) {
-            res.status(401).json({ success: false, message: 'Not authorized' });
+            console.error('Get user error:', error);
+            res.status(401).json({ 
+                success: false, 
+                message: 'Not authorized: ' + error.message 
+            });
         }
     });
     
     app.post('/api/auth/logout', (req, res) => {
-        res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000), httpOnly: true });
-        res.json({ success: true, message: 'Logged out successfully' });
+        res.cookie('token', 'none', { 
+            expires: new Date(Date.now() + 10 * 1000), 
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        res.json({ 
+            success: true, 
+            message: 'Logged out successfully' 
+        });
     });
 }
 
@@ -167,12 +312,19 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
     console.log(`💾 Storage: ${useInMemory ? 'In-Memory (Temporary)' : 'MongoDB (Persistent)'}`);
     console.log(`🔗 API: http://localhost:${PORT}/api`);
     if (useInMemory) {
         console.log('⚠️  WARNING: Data will be lost on server restart!');
     }
+    
+    // Log environment info
+    console.log(`🔐 JWT_SECRET: ${process.env.JWT_SECRET ? '✓ Set' : '❌ Missing'}`);
+    console.log(`🌐 CLIENT_URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+}).on('error', (err) => {
+    console.error('❌ Failed to start server:', err.message);
+    process.exit(1);
 });
 
 export default app;

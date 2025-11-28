@@ -8,36 +8,49 @@ const router = express.Router();
 
 // Generate JWT Token
 const generateToken = (id) => {
+    // Check if JWT_SECRET is defined
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not defined in environment variables');
+    }
+    
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE
+        expiresIn: process.env.JWT_EXPIRE || '24h'
     });
 };
 
 // Send token response
 const sendTokenResponse = (user, statusCode, res) => {
-    const token = generateToken(user._id);
+    try {
+        const token = generateToken(user._id);
 
-    const options = {
-        httpOnly: true, // Prevent XSS attacks
-        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    };
+        const options = {
+            httpOnly: true, // Prevent XSS attacks
+            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        };
 
-    res
-        .status(statusCode)
-        .cookie('token', token, options)
-        .json({
-            success: true,
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                company: user.company,
-                role: user.role
-            }
+        res
+            .status(statusCode)
+            .cookie('token', token, options)
+            .json({
+                success: true,
+                token,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    company: user.company,
+                    role: user.role
+                }
+            });
+    } catch (error) {
+        console.error('Error in sendTokenResponse:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error generating token'
         });
+    }
 };
 
 // @route   POST /api/auth/register
@@ -67,9 +80,26 @@ router.post('/register', validateRegistration, async (req, res) => {
         sendTokenResponse(user, 201, res);
     } catch (error) {
         console.error('Registration error:', error);
+        // Handle specific MongoDB errors
+        if (error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'User already exists with this email'
+            });
+        }
+        
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: messages
+            });
+        }
+        
         res.status(500).json({
             success: false,
-            message: 'Server error during registration'
+            message: 'Server error during registration: ' + error.message
         });
     }
 });
@@ -110,7 +140,7 @@ router.post('/login', validateLogin, async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error during login'
+            message: 'Server error during login: ' + error.message
         });
     }
 });
@@ -120,6 +150,14 @@ router.post('/login', validateLogin, async (req, res) => {
 // @access  Private
 router.get('/me', protect, async (req, res) => {
     try {
+        // Check if user exists in request
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Not authorized'
+            });
+        }
+        
         const user = await User.findById(req.user.id);
 
         res.status(200).json({
@@ -136,7 +174,7 @@ router.get('/me', protect, async (req, res) => {
         console.error('Get user error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error'
+            message: 'Server error: ' + error.message
         });
     }
 });
